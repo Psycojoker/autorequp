@@ -1,3 +1,5 @@
+import os
+import sys
 import argparse
 
 
@@ -7,8 +9,10 @@ def main():
     parser.add_argument('-t', '--test-command', help='test command to launch to validate that everything is ok', required=True)
 
     args = parser.parse_args()
-    print(args.requirements)
-    print(args.test_command)
+
+    if not os.path.exists(args.requirements):
+        print(f"Error: requirements file '{args.requirements}' doesn't exist")
+        sys.exit(1)
 
 
 if __name__ == '__main__':
