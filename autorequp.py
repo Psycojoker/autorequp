@@ -141,6 +141,11 @@ def main():
 
     requirements = filter_pkg_that_can_be_upgraded(requirements)
 
+    if not requirements:
+        print("")
+        print("Nothing to do, everything is up to date")
+        sys.exit(0)
+
     print(requirements)
 
 
