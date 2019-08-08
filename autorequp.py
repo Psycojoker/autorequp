@@ -6,7 +6,7 @@ from itertools import takewhile, dropwhile
 
 
 def parse_requirements_file(requirements_file):
-    requirements = []
+    requirements = {}
     with open(requirements_file, "r") as f:
         for line in f.read().split("\n"):
             # ignore comments
@@ -18,7 +18,7 @@ def parse_requirements_file(requirements_file):
             name = "".join(takewhile(lambda x: x not in ("<", ">", "=", "!"), line))
             conditions = "".join(dropwhile(lambda x: x not in ("<", ">", "=", "!"), line)).split(",")
 
-            requirements.append([name, conditions])
+            requirements[name] = conditions
 
     return requirements
 
