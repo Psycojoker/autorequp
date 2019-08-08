@@ -13,8 +13,8 @@ def parse_requirements_file(requirements_file):
     requirements = {}
     with open(requirements_file, "r") as f:
         for line in f.read().split("\n"):
-            # ignore comments
-            if line.strip().startswith("#"):
+            # ignore comments and blank lines
+            if not line.strip() or line.strip().startswith("#"):
                 continue
 
             line = line.strip()
