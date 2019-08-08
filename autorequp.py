@@ -5,6 +5,7 @@ import re
 import sys
 import operator
 import argparse
+import subprocess
 
 from itertools import takewhile, dropwhile
 from distlib.version import LegacyVersion
@@ -124,6 +125,52 @@ def parse_conditions(conditions):
     return parsed_conditions
 
 
+def try_to_upgrade_dependencies(test_command, requirements, requirements_file):
+    # TODO explore different strategies like:
+    # - max_upgrade first
+    # - be aware of semantic versionning to jump between non-breaking versions
+    # - bisect
+
+    # TODO handle the situation when a requirement need other requirements to
+    # be upgraded too
+
+    for name, requirement in requirements.items():
+        for possible_upgrade in requirement["possible_upgrades"]:
+            version = possible_upgrade["version"]
+            previous_version = change_version(name, version, requirements_file)
+
+            try:
+                subprocess.check_call(test_command, shell=True)
+            except subprocess.CalledProcessError:
+                print(f"[FAILED] {name} → {version}, rollback to {previous_version}")
+                # rollback_version(previous_version, requirements_file)
+                break
+            else:
+                print(f"[SUCCESS] {name} → {version}")
+
+
+def change_version(pkg_name, version, requirements_file):
+    lines = []
+    with open(requirements_file, "r") as f:
+        for line in f.read().split("\n"):
+            # XXX here we don't take the "[stuff]"
+            name = "".join(takewhile(lambda x: x not in ("<", ">", "=", "!", "["), line))
+            previous_version = "".join(dropwhile(lambda x: x not in ("<", ">", "=", "!"), line))
+            if name == pkg_name:
+                # dep[special_config]
+                if "[" in line:
+                    name = line.split("[")
+
+                line = f"{name}=={version}"
+
+            lines.append(line)
+
+    with open(requirements_file, "w") as f:
+        f.write("\n".join(lines))
+
+    return previous_version
+
+
 def main():
     parser = argparse.ArgumentParser(description='Auto-upgrade python dependencies of a project.')
     parser.add_argument('-r', '--requirements', help='frozen requirements.txt file', required=True)
@@ -146,7 +193,7 @@ def main():
         print("Nothing to do, everything is up to date")
         sys.exit(0)
 
-    print(requirements)
+    try_to_upgrade_dependencies(args.test_command, requirements, requirements_file=args.requirements)
 
 
 if __name__ == '__main__':
